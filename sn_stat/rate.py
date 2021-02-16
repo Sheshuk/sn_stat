@@ -3,21 +3,38 @@ from scipy.integrate import quad
 from scipy.interpolate import interp1d,UnivariateSpline
 
 class ABCRate:
+    range = (-np.inf, np.inf)
     pass
+
+class _limited(ABCRate):
+    def __init__(self, r0, new_range):
+        self._r0 = r0
+        self.range = new_range
+    def __call__(self, t):
+        return (self.range[0]<=t)*(t<=self.range[1])*self._r0(t)
+    def integral(self, t0,t1):
+        R0,R1 = self.range
+        t0 = min(max(t0,R0),R1)
+        t1 = max(min(t1,R1),R0)
+        return self._r0.integral(t0,t1)
 
 class _mul(ABCRate):
     def __init__(self, r0, factor):
-        self.r0 = r0
+        self._r0 = r0
         self.C = factor
+        self.range = r0.range
     def __call__(self, t):
-        return self.C*self.r0(t)
+        return self.C*self._r0(t)
     def integral(self, t0,t1):
-        return self.C*self.r0.integral(t0,t1)
+        return self.C*self._r0.integral(t0,t1)
 
 class _sum(ABCRate):
     def __init__(self, r0, r1):
         self.r0 = r0
         self.r1 = r1
+        self.range = (min(r0.range[0], r1.range[0]),
+                      max(r0.range[1], r1.range[1]))
+
     def __call__(self, t):
         return self.r0(t)+self.r1(t)
     def integral(self, t0,t1):
@@ -27,6 +44,7 @@ class _shift(ABCRate):
     def __init__(self, r0, dt):
         self.r0=r0
         self.dt=dt
+        self.range = (r0.range[0]+dt,r0.range[1]+dt)
     def __call__(self, t):
         return self.r0(t-self.dt)
     def integral(self, t0,t1):
@@ -35,6 +53,7 @@ class _shift(ABCRate):
 class _invert(ABCRate):
     def __init__(self, r0):
         self.r0=r0
+        self.range = (-r0.range[1],-r0.range[0])
     def __call__(self, t):
         return self.r0(-t)
     def integral(self, t0,t1):
@@ -58,6 +77,7 @@ class Func(ABCRate):
 
 class Interpolated(ABCRate):
     def __init__(self,x,y,**kwargs):
+        self.range = (x[0],x[-1])
         kwargs.setdefault('ext',1)
         kwargs.setdefault('k',1)
         kwargs.setdefault('s',0)
@@ -118,22 +138,34 @@ ABCRate.__rmul__= lambda self, factor:_mul(self,factor)
 ABCRate.shift   = lambda self, dt: _shift(self,dt)
 ABCRate.invert  = lambda self: _invert(self)
 
-def rate(a):
+def rate(a, *, range=None):
     """ create a Rate object
 
-    rate(scalar)   --> create rate.Const(a)
-    rate(callable) --> create rate.Func(a)
-    rate( (x,y) )  --> create rate.Interpolated(x,y)
+    parameters:
+    ----------
+    a: (scalar|callable| tuple(floats,floats) | ABCRate)
+        Object to use to create the rate:
+        * scalar:  create `rate.Const(a)`
+        * callable: create `rate.Func(a)`
+        * tuple(x,y): create `rate.Interpolated(x,y)`
+        * ABCRate: use given rate
+    range: (None|tuple(float,float))
+        if given tuple (x0,x1), the rate outside (x0,x1) will be 0
     """
-    from collections import abc
-    if isinstance(a,ABCRate):
-        return a
-    if callable(a):
-        return Func(a)
-    elif np.isscalar(a):
-        return Const(a)
-    else:
-        return Interpolated(*a)
+    def __make_rate(a):
+        if isinstance(a,ABCRate):
+            return a
+        if callable(a):
+            return Func(a)
+        elif np.isscalar(a):
+            return Const(a)
+        else:
+            return Interpolated(*a)
+
+    r = __make_rate(a)
+    if(range is not None):
+        r = _limited(r, new_range=range)
+    return r
     
 def log_rate(a):
     """ create a Rate object with log-log interpolation, 
