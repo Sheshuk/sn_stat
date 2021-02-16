@@ -29,10 +29,40 @@ class Distr:
         return N, bins
     
 class LLR:
-    def __init__(self, S, B, time_window=[0,10]):
+    """Log Likelihood Ratio(LLR) calculator
+
+        Log likelihood ratio for H0 (B) and H1 (B+S) hypotheses:
+
+            L(t,t0) = log(1+S(t-t0)/B(t))
+
+        where t is the event time and t0 is assumed signal start time.
+
+    """
+    def __init__(self, S, B, time_window=None):
+        """
+        parameters:
+        -----------
+        S: rate|float|function|(x,y) tuple
+            expected signal event rate vs. time
+        B: rate|float|function|(x,y) tuple
+            background rate vs. time
+        time_window: tuple(T0,T1) or None
+            the limits around t0 in which to take the signal.
+            if None then try to take the full range from S (via S.range)
+
+        Usually time_window should be the same as the range of S, or smaller if you want to consider only part of the signal shape.
+
+        """
         self.S = rate(S)
+        if(time_window is None):
+            time_window = S.range
+
+        if np.any(np.isinf(time_window)):
+            raise ArgumentError(f'Cannot work with infinite time window: {time_window}')
+
         self.S0=self.S.integral(*time_window)
         self.B = rate(B) 
+
         self.time_window=np.array(time_window)
     
     def llr(self,ts,t0):
@@ -46,6 +76,7 @@ class LLR:
     def __call__(self,ts,t0):
         res = self.llr(ts,t0)
         return np.sum(res, axis=1)
+
     def sample(self,hypothesis, Npoints,t0):
         #sample the LLR with hypothesis
         ts = np.linspace(*self.time_window,Npoints)+t0
