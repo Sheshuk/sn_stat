@@ -32,9 +32,7 @@ class LLR:
     """Log Likelihood Ratio(LLR) calculator
 
         Log likelihood ratio for H0 (B) and H1 (B+S) hypotheses:
-
             L(t,t0) = log(1+S(t-t0)/B(t))
-
         where t is the event time and t0 is assumed signal start time.
 
     """
@@ -55,10 +53,10 @@ class LLR:
         """
         self.S = rate(S)
         if(time_window is None):
-            time_window = S.range
+            time_window = self.S.range
 
         if np.any(np.isinf(time_window)):
-            raise ArgumentError(f'Cannot work with infinite time window: {time_window}')
+            raise ValueError(f'Cannot work with infinite time window: {time_window}')
 
         self.S0=self.S.integral(*time_window)
         self.B = rate(B) 
