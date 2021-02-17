@@ -7,7 +7,12 @@ def p2z(p):
 def z2p(z):
     return stats.norm.sf(z)
 
-class SigCalc:
+class ShapeAnalysis:
+    """ Calculating significance using the shape analysis method.
+
+        
+
+    """
     def __init__(self, llrs, **params):
         self.llrs = llrs
         self.params=params
