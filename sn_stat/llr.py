@@ -12,21 +12,23 @@ class Distr:
             return interpolate.interp1d(X,Y, fill_value=(Y[0],Y[-1]), bounds_error=False, assume_sorted=True, kind='next')
 
         tail = np.cumsum(self.vals[::-1])[::-1]
-        self.tail = np.concatenate((tail,[0]))
-        self.vals = np.concatenate(([0],self.vals,[0]))
-        self.binc = np.concatenate(([self.bins[0]],
+        tail = np.concatenate((tail,[0]))
+        vals = np.concatenate(([0],self.vals,[0]))
+        binc = np.concatenate(([self.bins[0]],
                                      0.5*(self.bins[1:]+self.bins[:-1]),
                                      [self.bins[-1]]))
             
         #set functions
-        self.pdf  = make_func(x=self.binc,y=self.vals)
-        self.sf   = make_func(x=self.bins,y=self.tail)
-        self.isf  = make_func(y=self.bins[::-1],x=self.tail[::-1])
+        self.pdf  = make_func(x=binc,y=vals)
+        self.sf   = make_func(x=self.bins,y=tail)
+        self.isf  = make_func(y=self.bins[::-1],x=tail[::-1])
     def histogram(self, bins):
         if np.isscalar(bins):
             bins = np.linspace(self.bins[0],self.bins[-1],bins)
         N = -np.diff(self.sf(bins))
         return N, bins
+    def __repr__(self):
+        return f'{__class__}(bins={self.bins}, vals={self.vals})'
     
 class LLR:
     """Log Likelihood Ratio(LLR) calculator
@@ -72,6 +74,8 @@ class LLR:
         return res
         
     def __call__(self,ts,t0):
+        ts = np.array(ts, ndmin=1)
+        t0 = np.array(t0, ndmin=1)
         res = self.llr(ts,t0)
         return np.sum(res, axis=1)
 
