@@ -60,6 +60,11 @@ class _invert(ABCRate):
         return self.r0.integral(-t1,-t0)
 
 class Const(ABCRate):
+    """Constant rate in time
+    
+    Args:
+        c(float): constant rate value
+    """
     def __init__(self, c):
         self.c=c
     def __call__(self, t):
@@ -68,6 +73,11 @@ class Const(ABCRate):
         return self.c*(t1-t0)
 
 class Func(ABCRate):
+    """Rate defined by the function
+    
+    Args:
+        f(callable[float]->float): the desired rate vs. time function
+    """
     def __init__(self, f):
         self.f=f
     def __call__(self,t):
@@ -76,6 +86,14 @@ class Func(ABCRate):
         return quad(self.f,t0,t1)[0]
 
 class Interpolated(ABCRate):
+    """Rate defined by linear interpolation of the given points
+    
+    Args:
+        x(1D array-like): time values
+        y(1D array-like): rate values
+        **kwargs(dict): additional parameters to pass to :class:`scipy.interp.UnivariateSpline`
+            default = `dict(ext=1, k=1, s=1)` is for linear interpolation.
+    """
     def __init__(self,x,y,**kwargs):
         self.range = (x[0],x[-1])
         kwargs.setdefault('ext',1)
@@ -141,16 +159,20 @@ ABCRate.invert  = lambda self: _invert(self)
 def rate(a, *, range=None):
     """ create a Rate object
 
-    parameters:
-    ----------
-    a: (scalar|callable| tuple(floats,floats) | ABCRate)
-        Object to use to create the rate:
-        * scalar:  create `rate.Const(a)`
-        * callable: create `rate.Func(a)`
-        * tuple(x,y): create `rate.Interpolated(x,y)`
-        * ABCRate: use given rate
-    range: (None|tuple(float,float))
-        if given tuple (x0,x1), the rate outside (x0,x1) will be 0
+    Args:
+        a (`scalar` or `callable` or tuple[floats,floats] or :class:`ABCRate`):
+            Object to use to create the rate
+        range (`None` or `tuple(float,float)`):
+            if given tuple (x0,x1), the rate outside (x0,x1) will be 0
+    Returns:
+        a constructed rate object (inherited from :class:`ABCRate`).
+        Depending on the input type will produce following classes:
+
+        * `scalar`   - constant rate :class:`sn_stat.rate.Const`
+        * `callable` - rate defined by the function :class:`sn_stat.rate.Func`
+        * `tuple(x,y)` - :class:`sn_stat.rate.Interpolated` (x,y)
+        * :class:`ABCRate`: use given rate
+
     """
     def __make_rate(a):
         if isinstance(a,ABCRate):
@@ -168,14 +190,24 @@ def rate(a, *, range=None):
     return r
     
 def log_rate(a):
-    """ create a Rate object with log-log interpolation, 
-    i.e. assuming that between points (x0,y1) and (x1,y1)
-        y(x) = y_0*(x/x_0)**alpha
+    """ Create a Rate object with log-log interpolation, 
+
+    This is the alternative to :func:`rate` method for interpolation, 
+    using the log-log interpolation instead of a linear one.
+    I.e. assuming that between points (x0,y1) and (x1,y1)
+
+    .. math:: y(x) = y_0(x/x_0)^{\\alpha}
+
+    where :math:`\\alpha = \ln(y_1/y_0)/\ln(x_1/x_0)`
     
-    where alpha = ln(y_1/y_0)/ln(x_1/x_0)
-    
-    :param: a: tuple of points (x,y)
-    :return: rate object
+    Args:
+        a: tuple of 1-D array-like (x,y)
+            x values should be sorted and have the same sign (all x<0 or x>0)
+    Returns:
+        rate object
+    Raises:
+        ValueError: if not all x are of the same sign
+
     """
     x,y = a
     if np.all(x>=0):

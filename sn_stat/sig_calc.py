@@ -3,14 +3,14 @@ import numpy as np
 from .llr import JointDistr
 
 def p2z(p):
+    "convert p-value to significance"
     return stats.norm.isf(p)
 def z2p(z):
+    "convert significance to p-value"
     return stats.norm.sf(z)
 
 class ShapeAnalysis:
     """ Calculating significance using the shape analysis method.
-
-        
 
     """
     def __init__(self, llrs, **params):
@@ -43,6 +43,9 @@ class ShapeAnalysis:
         zs = self.l2z(ls)
         return np.nan_to_num(zs)
     def z_distr(self,hypos, add_bg=False,zbins=100):
+        """
+        calculate significance distribution based on given hypotheses `hypos`
+        """
         if (np.isscalar(zbins)):
             zbins=np.linspace(-5,5,zbins)
         lbins = self.z2l(zbins)
@@ -51,11 +54,15 @@ class ShapeAnalysis:
         return -np.diff(d1.sf(lbins)),zbins
     
     def l2p(self, l):
+        "convert LLR to p-value"
         return self.d0.sf(l)
     def p2l(self, p):
+        "convert p-value to LLR"
         return self.d0.isf(p)
     def l2z(self, l):
+        "convert LLR to significance"
         return p2z(self.l2p(l))
     def z2l(self, z):
+        "convert significance to LLR"
         return self.d0.isf(z2p(z))
     

@@ -108,32 +108,34 @@ class LLR:
         ls,_ = self.sample(hypothesis=self.B, Npoints=Npoints, t0=t0)
         return min(ls),max(ls)
     
-    def distr(self, hypothesis='H0', t0=0, normal=False, Npoints=10000, dl='auto'):
+    def distr(self, hypothesis='H0', t0=0, *, normal=False, Nsamples=10000, dl='auto'):
         """
         Calculate the LLR distribution under given assumption of the event rate
 
-        parameters
-        ----------
-        hypothesis: 'H0' or rate
-            the assumed event rate vs. time. If hypothesis=='H0' - use background rate (`self.B`)
-        t0: float or np.ndarray(float)
-            assumed supernova times for which the distribution is calculated.
-            If t0 is np.ndarray - calculate for all the values.
-        normal: bool
-            if true, use the gaussian approximation for distribution calculation.
-            Otherwise use FFT method (default)
+        Args:
+            hypothesis(`rate` or "H0"):
+                the assumed event rate vs. time. If hypothesis=='H0' - use background rate (`self.B`)
+            t0   (float): assumed supernova start time
+            normal(bool): flag to use normal distribution, otherwise use precise FFT calculation
 
-        Npoints: int
-            numper of points to sample the LLR values.
-            Increasing this makes more accurate distribution
-        dl: float or 'auto'
-            bin size for the LLR distribution.
+            Nsamples(int):
+                number of points to sample the LLR values.
+                Increasing this makes more accurate distribution
+            dl(float or 'auto'):
+                LLR bin size for distribution.
+                if 'auto' - set it to 1e-3*max(l)
+                (ignored if `normal==True`)
+            epsilon(float):
+                calculation precision for FFT distributions
+                (ignored if `normal==True`)
+            Npoints(int):
+                number of points to sample the LLR values range
+                (ignored if `normal==True`)
 
-        returns
-        -------
-        distr: `Distr`
-            Distribution of the LLR values with bins from 0 to maximum LLR value in given time window
-
+        Returns:
+            distribution of the LLR values. 
+            If `normal==True` returns :class:`scipy.stats.norm`,
+            otherwise constructs :class:`Distr` with bins from 0 to maximum LLR value in given time window
         """
         if hypothesis=='H0':
             hypothesis=self.B
@@ -153,7 +155,7 @@ class LLR:
         H1/=H1.sum()
         return Distr(bins = binl, vals=H1)
     
-def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, dl=1e-3, *, epsilon=1e-16, Npoints=10000):
+def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, *, dl='auto', epsilon=1e-16, Npoints=10000):
     """
     Calculate the joint distribution of `llrs` under hypotheses `hypos`
 
