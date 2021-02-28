@@ -9,7 +9,9 @@ class Distr:
     def set_interpolation(self):
         def make_func(x,y):
             X,Y = x,y
-            return interpolate.interp1d(X,Y, fill_value=(Y[0],Y[-1]), bounds_error=False, assume_sorted=True, kind='next')
+            return interpolate.interp1d(X,Y, 
+                    fill_value=(Y[0],Y[-1]), 
+                    bounds_error=False, assume_sorted=True, kind='next')
 
         tail = np.cumsum(self.vals[::-1])[::-1]
         tail = np.concatenate((tail,[0]))
@@ -17,7 +19,6 @@ class Distr:
         binc = np.concatenate(([self.bins[0]],
                                      0.5*(self.bins[1:]+self.bins[:-1]),
                                      [self.bins[-1]]))
-            
         #set functions
         self.pdf  = make_func(x=binc,y=vals)
         self.sf   = make_func(x=self.bins,y=tail)
@@ -29,28 +30,27 @@ class Distr:
         return N, bins
     def __repr__(self):
         return f'{__class__}(bins={self.bins}, vals={self.vals})'
-    
+
 class LLR:
-    """Log Likelihood Ratio(LLR) calculator
+    """ Log likelihood ratio for H0 (B) and H1 (B+S) hypotheses:
 
-        Log likelihood ratio for H0 (B) and H1 (B+S) hypotheses:
-            L(t,t0) = log(1+S(t-t0)/B(t))
-        where t is the event time and t0 is assumed signal start time.
+        .. math:: \ell(t,t_0) = \log\left(1+\\frac{S(t-t_0)}{B(t)}\\right)
 
-    """
+        where `t` is the event time and `t_0` is assumed signal start time.
+        """
     def __init__(self, S, B, time_window=None):
         """
+        LLR calculator based on signal `S` and background `B` event rates.
+
         parameters:
         -----------
-        S: rate|float|function|(x,y) tuple
+        S : `rate`
             expected signal event rate vs. time
-        B: rate|float|function|(x,y) tuple
+        B : `rate`
             background rate vs. time
-        time_window: tuple(T0,T1) or None
-            the limits around t0 in which to take the signal.
-            if None then try to take the full range from S (via S.range)
-
-        Usually time_window should be the same as the range of S, or smaller if you want to consider only part of the signal shape.
+        time_window : tuple(T0,T1), optional
+            The limits around t0 in which to take the signal.
+            If None, then try to take the full range from S (via S.range)
 
         """
         self.S = rate(S)
@@ -74,6 +74,22 @@ class LLR:
         return res
         
     def __call__(self,ts,t0):
+        """
+        Calculate the LLR value for given set of measurements `ts`, assuming supernova times `t0`
+
+        parameters
+        ----------
+        ts : iterable
+            Measured interactions timestamps
+        t0 : iterable
+            Assumed supernova start times
+
+        returns
+        -------
+        llr : ndarray
+            Cumulative LLR values for each value of `t0`
+
+        """
         ts = np.array(ts, ndmin=1)
         t0 = np.array(t0, ndmin=1)
         res = self.llr(ts,t0)
@@ -87,7 +103,7 @@ class LLR:
         return ls,ws
     def l_range(self, t0, Npoints=10000):
         """
-        return (min, max) LLR values for given t0
+        returns: (min, max) LLR values for given t0
         """
         ls,_ = self.sample(hypothesis=self.B, Npoints=Npoints, t0=t0)
         return min(ls),max(ls)
@@ -95,6 +111,7 @@ class LLR:
     def distr(self, hypothesis='H0', t0=0, normal=False, Npoints=10000, dl='auto'):
         """
         Calculate the LLR distribution under given assumption of the event rate
+
         parameters
         ----------
         hypothesis: 'H0' or rate
@@ -114,7 +131,8 @@ class LLR:
 
         returns
         -------
-        `Distr` for the LLR values. Bins go from  0 to maximum LLR value in given time window
+        distr: `Distr`
+            Distribution of the LLR values with bins from 0 to maximum LLR value in given time window
 
         """
         if hypothesis=='H0':
@@ -138,33 +156,31 @@ class LLR:
 def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, dl=1e-3, *, epsilon=1e-16, Npoints=10000):
     """
     Calculate the joint distribution of `llrs` under hypotheses `hypos`
-    parameters:
-    -----------
-    llrs: iterable
-        a list of `LLR` objects for each experiment
-    hypos: iterable or 'H0'
-        a list of  of `rate` objects for each experiment
-        or 'H0' string: taking background rates from each LLR
-    t0: float or 1-D array-like
-        time(s) of expected SN start (for LLR calc)
-    R_threshold:  int
-        if the integrated rate in hypothesis is above this threshold,
-        a Gaussian approximation is used for this distribution.
-        If the rate is below - a precise calculation with FFT is performed.
-    dl: float or 'auto'
-        LLR bin size for distributions. Ignored, if all distributions are gaussian.
-        if 'auto' - set it to 1e-3*max(l)
 
-    keyword arguments: ignored if all distrs are gaussian
-    -----------------
-    epsilon: float
-        calculation precision for FFT distributions
-    Npoints: int
-        number of points to sample the LLR values range
+    Args:
+        llrs (iterable of :class:`LLR`): 
+            LLR calculators for each experiment
+        hypos (iterable of `rate` or  "H0"): 
+            expected rate for each experiment,
+            or "H0" string - taking background rates from each LLR
+        t0 (float): 
+            time of assumed SN start 
+        R_threshold (int): 
+            if the integrated rate in hypothesis is above this threshold,
+            a Gaussian approximation is used for this distribution,
+            otherwise a precise calculation with FFT is performed.
+        dl(float or 'auto'):
+            LLR bin size for distributions. Ignored, if all distributions are gaussian.
+            if 'auto' - set it to 1e-3*max(l)
+        epsilon(float):
+            calculation precision for FFT distributions
+            (ignored if all distrs are gaussian)
+        Npoints(int):
+            number of points to sample the LLR values range
+            (ignored if all distrs are gaussian)
     
-    Returns
-    -------
-    Distr for the joint (sum) LLRs
+    Returns:
+        `Distr`: a distribution for the joint (sum) of individual LLRs under the given hypothesis
     """
     def NormDistr(distrs,R):
         if len(distrs)==0:
@@ -243,3 +259,4 @@ def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, dl=1e-3, *, epsilon=1e-1
     d1 = NormDistr(H1s[largeR], R[largeR])
     d2 = FFTDistr (H1s[smallR], R[smallR],dl=llr_step)
     return combine_distrs(d1,d2)
+
