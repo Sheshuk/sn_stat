@@ -24,4 +24,5 @@ llr
 ShapeAnalysis
 --------------
 .. autoclass:: sn_stat.ShapeAnalysis
+    :special-members: __call__
     :members:
