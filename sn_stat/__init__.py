@@ -1,5 +1,3 @@
-__version__='0.2'
-
 from .rate import rate,log_rate
 from .sampler import Sampler
 from . import  llr, signals

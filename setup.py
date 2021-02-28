@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
-from sn_stat import __version__
+from sn_stat._version import __version__
 
 setup(name='sn-stat',
         version=__version__,
