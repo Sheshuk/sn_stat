@@ -12,6 +12,11 @@ Concrete rates
 .. automodule:: sn_stat.rate
     :members: Const,Func,Interpolated
 
+sampler
+-------
+.. autoclass:: sn_stat.Sampler
+    :members:
+
 llr
 -----------
 .. automodule:: sn_stat.llr
