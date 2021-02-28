@@ -42,15 +42,12 @@ class LLR:
         """
         LLR calculator based on signal `S` and background `B` event rates.
 
-        parameters:
-        -----------
-        S : `rate`
-            expected signal event rate vs. time
-        B : `rate`
-            background rate vs. time
-        time_window : tuple(T0,T1), optional
-            The limits around t0 in which to take the signal.
-            If None, then try to take the full range from S (via S.range)
+        Args:
+            S(rate): expected signal event rate vs. time
+            B(rate): background rate vs. time
+            time_window (tuple(float, float)), optional:
+                The limits around t0 in which to take the signal.
+                If None, then try to take the full range from S (via S.range)
 
         """
         self.S = rate(S)
@@ -95,17 +92,17 @@ class LLR:
         res = self.llr(ts,t0)
         return np.sum(res, axis=1)
 
-    def sample(self,hypothesis, Npoints,t0):
+    def sample(self,hypothesis, Nsamples,t0):
         #sample the LLR with hypothesis
-        ts = np.linspace(*self.time_window,Npoints)+t0
+        ts = np.linspace(*self.time_window,Nsamples)+t0
         ls = self.llr(ts,t0=[t0]).flatten()
         ws = hypothesis(ts)
         return ls,ws
-    def l_range(self, t0, Npoints=10000):
+    def l_range(self, t0, Nsamples=10000):
         """
         returns: (min, max) LLR values for given t0
         """
-        ls,_ = self.sample(hypothesis=self.B, Npoints=Npoints, t0=t0)
+        ls,_ = self.sample(hypothesis=self.B, Nsamples=Nsamples, t0=t0)
         return min(ls),max(ls)
     
     def distr(self, hypothesis='H0', t0=0, *, normal=False, Nsamples=10000, dl='auto'):
@@ -128,7 +125,7 @@ class LLR:
             epsilon(float):
                 calculation precision for FFT distributions
                 (ignored if `normal==True`)
-            Npoints(int):
+            Nsamples(int):
                 number of points to sample the LLR values range
                 (ignored if `normal==True`)
 
@@ -139,7 +136,7 @@ class LLR:
         """
         if hypothesis=='H0':
             hypothesis=self.B
-        ls,ws = self.sample(hypothesis,Npoints,t0)
+        ls,ws = self.sample(hypothesis,Nsamples,t0)
         if normal:
             ws/=ws.sum()
             mu  = ls@ws
@@ -155,7 +152,7 @@ class LLR:
         H1/=H1.sum()
         return Distr(bins = binl, vals=H1)
     
-def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, *, dl='auto', epsilon=1e-16, Npoints=10000):
+def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, *, dl=1e-3, epsilon=1e-16, Nsamples=10000):
     """
     Calculate the joint distribution of `llrs` under hypotheses `hypos`
 
@@ -171,13 +168,12 @@ def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, *, dl='auto', epsilon=1e
             if the integrated rate in hypothesis is above this threshold,
             a Gaussian approximation is used for this distribution,
             otherwise a precise calculation with FFT is performed.
-        dl(float or 'auto'):
+        dl(float):
             LLR bin size for distributions. Ignored, if all distributions are gaussian.
-            if 'auto' - set it to 1e-3*max(l)
         epsilon(float):
             calculation precision for FFT distributions
             (ignored if all distrs are gaussian)
-        Npoints(int):
+        Nsamples(int):
             number of points to sample the LLR values range
             (ignored if all distrs are gaussian)
     
@@ -257,7 +253,7 @@ def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, *, dl='auto', epsilon=1e
     else:
         llr_step=dl
  
-    H1s=np.array([l.distr(h,t0,l_bin_width=llr_step,normal=is_norm,Npoints=Npoints) for l,h,is_norm in zip(llrs,hypos, largeR)])
+    H1s=np.array([l.distr(h,t0,dl=llr_step,normal=is_norm,Nsamples=Nsamples) for l,h,is_norm in zip(llrs,hypos, largeR)])
     d1 = NormDistr(H1s[largeR], R[largeR])
     d2 = FFTDistr (H1s[smallR], R[smallR],dl=llr_step)
     return combine_distrs(d1,d2)
