@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
 from distutils.core import setup
-import sn_stat
+from sn_stat import __version__
 
 setup(name='sn-stat',
-        version=sn_stat.__version__,
+        version=__version__,
         description='Statistical methods for supernova neutrino detection',
         author='Andrey Sheshukov',
         author_email='ash@jinr.ru',
