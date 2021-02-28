@@ -1,6 +1,10 @@
 Usage
 =====
 
+.. toctree::
+
+    rate
+
 Rate definition
 ---------------
 For the shape analysis each experiment must define the background rate `B` 
