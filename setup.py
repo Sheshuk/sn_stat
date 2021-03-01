@@ -11,6 +11,6 @@ setup(name='sn-stat',
         packages=['sn_stat'],
         install_requires=['numpy','scipy'],
         extras_require={'doc':['sphinx','sphinx-rtd-theme'],
-                        'test':['pytest','hypothesis']}
+                        'test':['pytest','hypothesis','flake8']}
      )
 
