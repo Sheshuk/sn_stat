@@ -57,3 +57,26 @@ Significance on a given data set
     t0s = np.linspace(0,10) #assumed SN start time
     #Calculate the significance
     zs = ana(ts,t0s)
+
+Significance quantiles and distribution
+---------------------------------------
+.. code-block:: python
+
+    from sn_stat import rate, LLR, ShapeAnalysis
+    
+    B = rate(10)
+    S = rate(([0,1,10],[0,10,0]))
+
+    llr = LLR(S,B)
+    ana = ShapeAnalysis([llr]) 
+    
+    #Calculate the significance quantiles
+    from sn_stat import z2p
+    quantiles =  z2p([-1,0,1]) #quantiles corresponding to median and +-sigma band
+
+    zs0 = ana.z_quant([B], qs = quantiles) #calculate assumin only background
+    print(zs0) #[-1,0,1] - zero significance in case of no supernova
+    zs1 = ana.z_quant([B+S], qs = quantiles) #calculate assumin only background
+    print(zs1) #[4.44822334, 5.76116125, 7.07409916] - high significance if the SN signal is seen
+
+
