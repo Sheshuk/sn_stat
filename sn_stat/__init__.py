@@ -3,4 +3,5 @@ from .sampler import Sampler
 from . import  llr, signals
 from .llr import LLR
 from .signals import Signal
-from .sig_calc import  SigCalc, z2p, p2z
+from .sig_calc import  ShapeAnalysis, z2p, p2z
+
