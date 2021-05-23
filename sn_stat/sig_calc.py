@@ -1,7 +1,7 @@
 from scipy import stats
 import numpy as np
 from .llr import JointDistr, LLR
-from .det_config import DetConfig
+from . import DetConfig
 from abc import ABC, abstractmethod
 from scipy.stats import poisson
 
@@ -24,7 +24,8 @@ class Analysis(ABC):
     @abstractmethod
     def l_val(self, data, d0):
         """
-        Calculate test statistics
+        Calculate test statistics value
+
         Args:
             data (iterable of float): 
                 measured events time stamps
@@ -78,10 +79,32 @@ class Analysis(ABC):
 
 class CountingAnalysis(Analysis):
     def __init__(self, det: DetConfig):
+        """ 
+        Calculating significance using the counting analysis method:
+        using number of interactions within the time window (:class:`DetConfig.time_window`) as the test statistics (TS).
+
+        Args:
+            det(:class:`DetConfig`): 
+                configuration for the experiment
+        """
+ 
         self.det = det
         super().__init__()
 
     def l_distr(self, hypos, add_bg=False):
+        """
+        Calculate TS distribution
+
+        Args:
+            hypos: :class:rate or "H0"
+                Hypothetical event we use to calculate the distribution
+                If "H0" then use the background rate (self.det.B)
+
+            add_bg: bool
+                If set, then add the background rate to the `hypos`
+        Returns:
+            frozen poisson distribution
+        """
         if(hypos=="H0"):
             hypos=self.det.B
         if(add_bg):
@@ -97,16 +120,19 @@ class CountingAnalysis(Analysis):
         T0,T1 = tw[0]+t0, tw[1]+t0
         return np.sum( (data>=T0)&(data<=T1), axis=0)
 
+
 class ShapeAnalysis(Analysis):
     def __init__(self, detectors, **params):
         """ 
-        Calculating significance using the shape analysis method.
+        Calculating significance using the shape analysis method, 
+        using Log Likelihood Ratio (:class:`LLR`) 
 
         Args:
             detectors (iterable of :class:`DetConfig`): 
                 configurations for each experiment
+        Keyword Args:
             params (dict of kwargs):
-                configuration arguments to be passed to :class:`JointDistr`:
+                configuration arguments to be passed to :func:`sn_stat.llr.JointDistr`:
                     
         """
         self.llrs = [LLR(d) for d in detectors]
@@ -114,25 +140,26 @@ class ShapeAnalysis(Analysis):
         self.d0 = self.l_distr(hypos="H0")
     
     def l_val(self, data, t0):
-        """
-        Calculate test statistics
-        Args:
-            data (iterable of float): 
-                measured events time stamps
-            t0 (ndarray of float):
-                assumed time/times of signal start
-        Returns:
-            ndarray of float:
-                test statistic values for each value in `t0`
-        """
         assert len(data)==len(self.llrs)
         ls = np.stack([l(d,t0) for l,d in zip(self.llrs, data)])
         return np.sum(ls,axis=0)
    
     def l_distr(self,hypos,add_bg=False):
         """
-        calculate LLR distribution for given hypotheses"
+        Calculate TS distribution
+
+        Args:
+            hypos: array(:class:rate) or "H0"
+                Hypothetical event we use to calculate the distribution - for each detector
+                If "H0" then use the background rate (self.det.B)
+
+            add_bg: bool
+                If set, then add the background rate to the `hypos`
+        Returns:
+            :class:`sn_stat.llr.Distr`:
+                Distribution of the test statistics
         """
+
         if hypos!="H0":
             assert len(hypos)==len(self.llrs)
             if(add_bg):

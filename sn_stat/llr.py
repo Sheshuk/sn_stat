@@ -94,10 +94,11 @@ class LLR:
             t0   (float): assumed supernova start time
             normal(bool): flag to use normal distribution, otherwise use precise FFT calculation
 
-            Nsamples(int):
-                number of points to sample the LLR values.
-                Increasing this makes more accurate distribution
-            dl(float or 'auto'):
+        Keyword Args:
+            normal(bool):
+                if True, approximate with normal distribution,
+                otherwise calculate numerically with FFT
+            dl(float or "auto"):
                 LLR bin size for distribution.
                 if 'auto' - set it to 1e-3*max(l)
                 (ignored if `normal==True`)
@@ -147,6 +148,8 @@ def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, *, dl=1e-3, epsilon=1e-1
             if the integrated rate in hypothesis is above this threshold,
             a Gaussian approximation is used for this distribution,
             otherwise a precise calculation with FFT is performed.
+
+    Keyword Args:
         dl(float):
             LLR bin size for distributions. Ignored, if all distributions are gaussian.
         epsilon(float):
@@ -157,7 +160,8 @@ def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, *, dl=1e-3, epsilon=1e-1
             (ignored if all distrs are gaussian)
     
     Returns:
-        `Distr`: a distribution for the joint (sum) of individual LLRs under the given hypothesis
+        :class:`Distr`: 
+            a distribution for the joint (sum) of individual LLRs under the given hypothesis
     """
     def NormDistr(distrs,R):
         if len(distrs)==0:
