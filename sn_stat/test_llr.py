@@ -1,5 +1,4 @@
-from sn_stat import rate, LLR
-from sn_stat.llr import Distr
+import sn_stat as sn
 from hypothesis import strategies as st, given, assume
 from hypothesis.extra.numpy import arrays
 import numpy as np
@@ -19,7 +18,7 @@ def distrS(draw,size=st.integers(1,100),bins=Xval,vals=Yval):
     ys = draw(arrays(float,elements=vals, shape=n))
     assume(np.any(ys>0))
     ys = ys/ys.sum()
-    d = Distr(xs,ys)
+    d = sn.llr.Distr(xs,ys)
     d.set_interpolation()
     return d
 
@@ -51,9 +50,9 @@ def test_distr_hist(d):
 @given(Tvalue,Tvalue, Trange)
 def test_llr_const_single(t0,t_data,time_window):
     with pytest.raises(ValueError):
-        llr = LLR(1,2)
+        llr = sn.LLR(sn.DetConfig(1,2))
     
-    l = LLR(1,1,time_window=time_window)
+    l = sn.LLR(sn.DetConfig(1,1,time_window=time_window))
     if(time_window[0] <= t_data-t0 <= time_window[1]):
         assert l(t_data,t0)==np.log(2)
     else:
