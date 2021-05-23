@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='sn-stat',
-        version='0.2',
+        version='0.3',
         description='Statistical methods for supernova neutrino detection',
         author='Andrey Sheshukov',
         author_email='ash@jinr.ru',
