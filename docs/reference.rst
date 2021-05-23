@@ -17,17 +17,32 @@ sampler
 .. autoclass:: sn_stat.Sampler
     :members:
 
+detector configuration
+----------------------
+.. autoclass:: sn_stat.DetConfig
+    :members:
+
 llr
 -----------
 .. automodule:: sn_stat.llr
     :members: JointDistr
 
+.. autoclass:: sn_stat.llr.Distr
+    :members:
+
 .. autoclass:: sn_stat.LLR
     :special-members: __call__
     :members:
 
-ShapeAnalysis
+Analyses
 --------------
+.. autoclass:: sn_stat.CountingAnalysis
+    :special-members: __call__
+    :members:
+    :inherited-members:
+
+
 .. autoclass:: sn_stat.ShapeAnalysis
     :special-members: __call__
     :members:
+    :inherited-members:
