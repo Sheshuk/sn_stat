@@ -3,5 +3,5 @@ from .rate import rate,log_rate
 from .sampler import Sampler
 from .llr import LLR, JointDistr
 from .signals import Signal
-from .sig_calc import  ShapeAnalysis, z2p, p2z
+from .sig_calc import  ShapeAnalysis,CountingAnalysis, z2p, p2z
 
