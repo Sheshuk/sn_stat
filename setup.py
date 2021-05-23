@@ -5,7 +5,7 @@ import setuptools
 with open('README.md') as f:
     readme = f.read()
 
-setup(name='sn-stat',
+setuptools.setup(name='sn-stat',
         version='0.3.1',
         description='Statistical methods for supernova neutrino detection',
         long_description=readme,
