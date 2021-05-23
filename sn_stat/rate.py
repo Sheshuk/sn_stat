@@ -1,10 +1,17 @@
 import numpy as np
 from scipy.integrate import quad
 from scipy.interpolate import interp1d,UnivariateSpline
+from abc import ABC, abstractmethod
 
-class ABCRate:
+class ABCRate(ABC):
     range = (-np.inf, np.inf)
-    pass
+    @abstractmethod
+    def integral(self, t0:float ,t1:float) -> float:
+        return 0
+
+    def total(self) -> float:
+        return self.integral(*self.range)
+        
 
 class _limited(ABCRate):
     def __init__(self, r0, new_range):
