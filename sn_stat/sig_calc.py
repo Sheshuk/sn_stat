@@ -1,6 +1,6 @@
 from scipy import stats
 import numpy as np
-from .llr import JointDistr
+from .llr import JointDistr, LLR
 
 def p2z(p):
     "convert p-value to significance"
@@ -13,8 +13,16 @@ class ShapeAnalysis:
     """ Calculating significance using the shape analysis method.
 
     """
-    def __init__(self, llrs, **params):
-        self.llrs = llrs
+    def __init__(self, detectors, **params):
+        """ 
+        Args:
+            detectors (iterable of :class:`DetConfig`): 
+                configurations for each experiment
+            params (dict of kwargs):
+                configuration arguments to be passed to :class:`JointDistr`:
+                    
+        """
+        self.llrs = [LLR(d) for d in detectors]
         self.params=params
         self.d0 = JointDistr(self.llrs,**self.params)
     def __call__(self, data, t0):

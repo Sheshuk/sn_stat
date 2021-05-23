@@ -1,6 +1,6 @@
 import numpy as np
 from scipy import stats, fft, interpolate
-from .rate import rate
+from .det_config import DetConfig
 
 class Distr:
     def __init__(self,bins,vals):
@@ -38,36 +38,15 @@ class LLR:
 
         where `t` is the event time and `t_0` is assumed signal start time.
         """
-    def __init__(self, S, B, time_window=None):
-        """
-        LLR calculator based on signal `S` and background `B` event rates.
-
-        Args:
-            S(rate): expected signal event rate vs. time
-            B(rate): background rate vs. time
-            time_window (tuple(float, float)), optional:
-                The limits around t0 in which to take the signal.
-                If None, then try to take the full range from S (via S.range)
-
-        """
-        self.S = rate(S)
-        if(time_window is None):
-            time_window = self.S.range
-
-        if np.any(np.isinf(time_window)):
-            raise ValueError(f'Cannot work with infinite time window: {time_window}')
-
-        self.S0=self.S.integral(*time_window)
-        self.B = rate(B) 
-
-        self.time_window=np.array(time_window)
-    
+    def __init__(self, det: DetConfig):
+        self.det = det
+   
     def llr(self,ts,t0):
         if ts.size==0: 
             return np.zeros((1,len(t0)))
         tSN = ts-np.expand_dims(t0,1)
-        res = np.log(1+self.S(tSN)/self.B(ts))
-        res[(tSN<self.time_window[0])|(tSN>self.time_window[1])]=0
+        res = np.log(1+self.det.S(tSN)/self.det.B(ts))
+        res[(tSN<self.det.time_window[0])|(tSN>self.det.time_window[1])]=0
         return res
         
     def __call__(self,ts,t0):
@@ -94,7 +73,7 @@ class LLR:
 
     def sample(self,hypothesis, Nsamples,t0):
         #sample the LLR with hypothesis
-        ts = np.linspace(*self.time_window,Nsamples)+t0
+        ts = np.linspace(*self.det.time_window,Nsamples)+t0
         ls = self.llr(ts,t0=[t0]).flatten()
         ws = hypothesis(ts)
         return ls,ws
@@ -102,7 +81,7 @@ class LLR:
         """
         returns: (min, max) LLR values for given t0
         """
-        ls,_ = self.sample(hypothesis=self.B, Nsamples=Nsamples, t0=t0)
+        ls,_ = self.sample(hypothesis=self.det.B, Nsamples=Nsamples, t0=t0)
         return min(ls),max(ls)
     
     def distr(self, hypothesis='H0', t0=0, *, normal=False, Nsamples=10000, dl='auto'):
@@ -111,7 +90,7 @@ class LLR:
 
         Args:
             hypothesis(`rate` or "H0"):
-                the assumed event rate vs. time. If hypothesis=='H0' - use background rate (`self.B`)
+                the assumed event rate vs. time. If hypothesis=='H0' - use background rate (`self.det.B`)
             t0   (float): assumed supernova start time
             normal(bool): flag to use normal distribution, otherwise use precise FFT calculation
 
@@ -135,7 +114,7 @@ class LLR:
             otherwise constructs :class:`Distr` with bins from 0 to maximum LLR value in given time window
         """
         if hypothesis=='H0':
-            hypothesis=self.B
+            hypothesis=self.det.B
         ls,ws = self.sample(hypothesis,Nsamples,t0)
         if normal:
             ws/=ws.sum()
@@ -158,7 +137,7 @@ def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, *, dl=1e-3, epsilon=1e-1
 
     Args:
         llrs (iterable of :class:`LLR`): 
-            LLR calculators for each experiment
+            configurations for each experiment
         hypos (iterable of `rate` or  "H0"): 
             expected rate for each experiment,
             or "H0" string - taking background rates from each LLR
@@ -238,9 +217,9 @@ def JointDistr(llrs, hypos='H0', t0=0, R_threshold=100, *, dl=1e-3, epsilon=1e-1
         return res
     
     if hypos=='H0':
-        hypos = [l.B for l in llrs]
+        hypos = [l.det.B for l in llrs]
     #prepare the rates for each experiment
-    R = np.array([h.integral(*l.time_window+t0) for l,h in zip(llrs,hypos)])
+    R = np.array([h.integral(*l.det.time_window+t0) for l,h in zip(llrs,hypos)])
    
     #divide small and large R cases
     largeR = (R>=R_threshold)

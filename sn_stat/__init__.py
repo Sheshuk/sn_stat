@@ -1,7 +1,7 @@
+from .det_config import DetConfig
 from .rate import rate,log_rate
 from .sampler import Sampler
-from . import  llr, signals
-from .llr import LLR
+from .llr import LLR, JointDistr
 from .signals import Signal
 from .sig_calc import  ShapeAnalysis, z2p, p2z
 
