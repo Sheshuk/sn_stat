@@ -25,3 +25,9 @@ class DetConfig:
 
         self.time_window=np.array(time_window)
     
+    def __str__(self):
+        tw = self.time_window
+        Ns = self.S.integral(*tw)
+        Nb = self.B.integral(*tw)
+        return "<DetConfig> ("+f"time_window=({tw[0]}, {tw[1]}), "+\
+                f"S/B = {Ns}/{Nb})"
