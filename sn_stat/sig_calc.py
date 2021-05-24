@@ -27,8 +27,9 @@ class Analysis(ABC):
         Calculate test statistics value
 
         Args:
-            data (iterable of float): 
-                measured events time stamps
+            data (iterable of array of float): 
+                List with arrays of measured events time stamps for each detector.
+                If there is only one detector, just an array(float) is enough
             t0 (ndarray of float):
                 assumed time/times of signal start
         Returns:
@@ -128,19 +129,26 @@ class ShapeAnalysis(Analysis):
         using Log Likelihood Ratio (:class:`LLR`) 
 
         Args:
-            detectors (iterable of :class:`DetConfig`): 
-                configurations for each experiment
+            detectors (single :class:`DetConfig` or iterable of :class:`DetConfig`): 
+                configurations for each experiment. 
+                Passing single DetConfig :code:`ShapeAnalysis(det)` is equivalent 
+                to passing a list with one item :code:`ShapeAnalysis([det])`
+                    
         Keyword Args:
             params (dict of kwargs):
                 configuration arguments to be passed to :func:`sn_stat.llr.JointDistr`:
                     
         """
+        if isinstance(detectors, DetConfig):
+            detectors = [detectors]
         self.llrs = [LLR(d) for d in detectors]
         self.params=params
         self.d0 = self.l_distr(hypos="H0")
     
     def l_val(self, data, t0):
-        assert len(data)==len(self.llrs)
+        if(len(data)!=len(self.llrs)):
+            data = np.array(data, ndmin=2)
+            assert data.shape[0]==len(self.llrs)
         ls = np.stack([l(d,t0) for l,d in zip(self.llrs, data)])
         return np.sum(ls,axis=0)
    
