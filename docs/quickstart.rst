@@ -29,7 +29,7 @@ Generate data sample
     ts_S = Sampler(S_true).sample() #generate the SG events!
 
 Describe detector configuration
-----------
+-------------------------------
 Background, expected signal and analysis time window should be defined for each considered experiment/detector/analysis.
 These parameters should be stored in the :class:`sn_stat.DetConfig` class
 
