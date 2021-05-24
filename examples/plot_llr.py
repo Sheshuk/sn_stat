@@ -25,15 +25,15 @@ print(det)
 #assumed supernova start times
 t0s = np.linspace(T0+det.time_window[0], T1-det.time_window[1],501)
 
-sa = sn.ShapeAnalysis ([det])
+sa = sn.ShapeAnalysis (det)
 ca = sn.CountingAnalysis(det)
 
 #calculate TS vs time
-ls_s = sa.l_val([ts],t0s)
+ls_s = sa.l_val(ts,t0s)
 ls_c = ca.l_val(ts,t0s)
 
 #calculate z vs time
-zs_s = sa([ts],t0s)
+zs_s = sa(ts,t0s)
 zs_c = ca(ts,t0s)
 
 #plot everything
