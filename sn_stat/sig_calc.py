@@ -16,6 +16,11 @@ def z2p(z):
 class Analysis(ABC):
     def __init__(self):
         self.d0 = self.l_distr(hypos="H0")
+        if(not hasattr(self.d0, "pmf")):
+            if(hasattr(self.d0, "pdf")):
+                self.d0.pmf = self.d0.pdf
+            else:
+                self.d0.pmf = lambda x:0
 
     @abstractmethod
     def l_distr(self, hypos, add_bg=False):
@@ -46,7 +51,7 @@ class Analysis(ABC):
  
     def l2p(self, l):
         "convert TestStatistics to p-value"
-        return self.d0.sf(l)
+        return self.d0.sf(l)+self.d0.pmf(l)
     def p2l(self, p):
         "convert p-value to TestStatistics"
         return self.d0.isf(p)
@@ -143,7 +148,7 @@ class ShapeAnalysis(Analysis):
             detectors = [detectors]
         self.llrs = [LLR(d) for d in detectors]
         self.params=params
-        self.d0 = self.l_distr(hypos="H0")
+        super().__init__()
     
     def l_val(self, data, t0):
         if(len(data)!=len(self.llrs)):
