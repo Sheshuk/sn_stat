@@ -4,6 +4,7 @@ from .llr import JointDistr, LLR
 from . import DetConfig
 from abc import ABC, abstractmethod
 from scipy.stats import poisson
+from collections.abc import Iterable
 
 def p2z(p):
     "convert p-value to significance"
@@ -14,13 +15,12 @@ def z2p(z):
 
 
 class Analysis(ABC):
-    def __init__(self):
+    def __init__(self, discrete=False):
         self.d0 = self.l_distr(hypos="H0")
-        if(not hasattr(self.d0, "pmf")):
-            if(hasattr(self.d0, "pdf")):
-                self.d0.pmf = self.d0.pdf
-            else:
-                self.d0.pmf = lambda x:0
+        if discrete:
+            self._pmf = self.d0.pmf
+        else:
+            self._pmf = lambda x:0
 
     @abstractmethod
     def l_distr(self, hypos, add_bg=False):
@@ -51,7 +51,7 @@ class Analysis(ABC):
  
     def l2p(self, l):
         "convert TestStatistics to p-value"
-        return self.d0.sf(l)+self.d0.pmf(l)
+        return self.d0.sf(l)+self._pmf(l)
     def p2l(self, p):
         "convert p-value to TestStatistics"
         return self.d0.isf(p)
@@ -95,7 +95,7 @@ class CountingAnalysis(Analysis):
         """
  
         self.det = det
-        super().__init__()
+        super().__init__(discrete=True)
 
     def l_distr(self, hypos, add_bg=False):
         """
@@ -174,9 +174,11 @@ class ShapeAnalysis(Analysis):
         """
 
         if hypos!="H0":
+            if not isinstance(hypos, Iterable):
+                hypos=[hypos]
             assert len(hypos)==len(self.llrs)
             if(add_bg):
-                hypos = [h+l.B for h,l in zip(hypos,self.llrs)]
+                hypos = [h+l.det.B for h,l in zip(hypos,self.llrs)]
         return JointDistr(self.llrs,hypos,**self.params)
     
         
