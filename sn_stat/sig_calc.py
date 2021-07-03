@@ -148,6 +148,7 @@ class ShapeAnalysis(Analysis):
             detectors = [detectors]
         self.llrs = [LLR(d) for d in detectors]
         self.params=params
+        self.det = detectors
         super().__init__()
     
     def l_val(self, data, t0):

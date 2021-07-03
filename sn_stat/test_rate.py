@@ -1,4 +1,4 @@
-from sn_stat import rate
+from sn_stat import rate, log_rate
 from hypothesis import strategies as st, given
 from hypothesis.extra.numpy import arrays
 import numpy as np
@@ -71,11 +71,11 @@ def test_range_integral(lims,t0t1):
         assert r.integral(t0,t1) == 0 
 
 @st.composite
-def xyS(draw, size=st.integers(2,100)):
+def xyS(draw, Xs=Xvalues, Ys=Yvalues, size=st.integers(2,100)):
     n = draw(size)
-    x = draw(arrays(float,elements=Xvalues,shape=n, unique=True))
+    x = draw(arrays(float,elements=Xs,shape=n, unique=True))
     x.sort()
-    y = draw(arrays(float,elements=Yvalues,shape=n))
+    y = draw(arrays(float,elements=Ys,shape=n))
     return (x,y)
 
 @given(xy=xyS())
