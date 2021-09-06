@@ -25,7 +25,7 @@ class Analysis(ABC):
     @abstractmethod
     def l_distr(self, hypos, add_bg=False):
         """
-        Calculate TS distribution
+        Calculate test statistic distribution
 
         Args:
             hypos: :class:rate or "H0"
