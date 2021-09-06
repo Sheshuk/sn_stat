@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 
 import setuptools 
-from sn_stat import __version__
 
 with open('README.md') as f:
     readme = f.read()
 
 setuptools.setup(name='sn-stat',
-        version=__version__,
         description='Statistical methods for supernova neutrino detection',
         long_description=readme,
         long_description_content_type='text/markdown',
