@@ -20,7 +20,7 @@ class Analysis(ABC):
         if discrete:
             self._pmf = self.d0.pmf
         else:
-            self._pmf = lambda x:0
+            self._pmf = self.d0.pdf#lambda x:0
 
     @abstractmethod
     def l_distr(self, hypos, add_bg=False):
@@ -95,6 +95,7 @@ class CountingAnalysis(Analysis):
         """
  
         self.det = det
+        self.time_window = det.time_window
         super().__init__(discrete=True)
 
     def l_distr(self, hypos, add_bg=False):
@@ -146,6 +147,10 @@ class ShapeAnalysis(Analysis):
         """
         if isinstance(detectors, DetConfig):
             detectors = [detectors]
+        self.time_window = [
+                min([d.time_window[0] for d in detectors]),
+                max([d.time_window[1] for d in detectors])
+                ]
         self.llrs = [LLR(d) for d in detectors]
         self.params=params
         self.det = detectors
@@ -182,4 +187,3 @@ class ShapeAnalysis(Analysis):
                 hypos = [h+l.det.B for h,l in zip(hypos,self.llrs)]
         return JointDistr(self.llrs,hypos,**self.params)
     
-        
