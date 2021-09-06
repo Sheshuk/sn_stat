@@ -34,22 +34,22 @@ class Distr:
 class LLR:
     """ Log likelihood ratio for H0 (B) and H1 (B+S) hypotheses:
 
-        .. math:: \ell(t,t_0) = \log\left(1+\\frac{S(t-t_0)}{B(t)}\\right)
+        .. math:: \\ell(t,t_0) = \\log\\left(1+\\frac{S(t-t_0)}{B(t)}\\right)
 
         where `t` is the event time and `t_0` is assumed signal start time.
         """
     def __init__(self, det: DetConfig):
         self.det = det
    
-    def llr(self,ts,t0):
+    def llr(self,ts,t0, w=1):
         if ts.size==0: 
             return np.zeros((1,len(t0)))
         tSN = ts-np.expand_dims(t0,1)
-        res = np.log(1+self.det.S(tSN)/self.det.B(ts))
+        res = np.log(1+self.det.S(tSN)/self.det.B(ts))*w
         res[(tSN<self.det.time_window[0])|(tSN>self.det.time_window[1])]=0
         return res
         
-    def __call__(self,ts,t0):
+    def __call__(self,ts,t0, time_precision=None):
         """
         Calculate the LLR value for given set of measurements `ts`, assuming supernova times `t0`
 
@@ -59,6 +59,9 @@ class LLR:
             Measured interactions timestamps
         t0 : iterable
             Assumed supernova start times
+        time_precision: float or `None`
+            If not None: group the given `ts` to the time bins with given precision, 
+            speeding up the calculation for large number of events
 
         returns
         -------
@@ -68,7 +71,14 @@ class LLR:
         """
         ts = np.array(ts, ndmin=1)
         t0 = np.array(t0, ndmin=1)
-        res = self.llr(ts,t0)
+        if(time_precision):
+            t,w = w,t = np.histogram(ts,bins=np.arange(ts.min(),ts.max(),time_precision))
+            tc = 0.5*(t[1:]+t[:-1])
+            tc = tc[w>0]
+            w = w[w>0]
+            res = self.llr(tc,t0,w)
+        else:
+            res = self.llr(ts,t0)
         return np.sum(res, axis=1)
 
     def sample(self,hypothesis, Nsamples,t0):

@@ -120,16 +120,20 @@ def _sort(x,y):
 class LogRate(ABCRate):
     def __init__(self, x,y, extrapolate=False):
         x,y = _sort(x,y)
-        a = np.diff(np.log(y))/np.diff(np.log(x))
-        yi = (x[1:]*y[1:]-y[:-1]*x[:-1])/(a+1)
-        yi = np.nan_to_num(yi)
-        yi=np.append([0],yi)
-        yi = np.cumsum(yi)
+        def __calc_log_params(x,y):
+            a = np.diff(np.log(y))/np.diff(np.log(x))
+            yi = (x[1:]*y[1:]-y[:-1]*x[:-1])/(a+1)
+            yi = np.nan_to_num(yi)
+            yi=np.append([0],yi)
+            yi = np.cumsum(yi)
+            return a, yi
+
         self.x,self.y = x,y
-        self.a,self.yi = a, yi
+        self.a,self.yi = __calc_log_params(x,y)
         self.extrapolate = extrapolate
-        self.idx_max = len(a)-1
-    
+        self.idx_max = len(self.a)-1
+        self.range=(min(x),max(x))
+
     def _index(self,x):
         if np.isscalar(x):
             x = [x]
@@ -205,7 +209,7 @@ def log_rate(a):
 
     .. math:: y(x) = y_0(x/x_0)^{\\alpha}
 
-    where :math:`\\alpha = \ln(y_1/y_0)/\ln(x_1/x_0)`
+    where :math:`\\alpha = \\ln(y_1/y_0)/\\ln(x_1/x_0)`
     
     Args:
         a: tuple of 1-D array-like (x,y)
@@ -217,6 +221,7 @@ def log_rate(a):
 
     """
     x,y = a
+
     if np.all(x>=0):
         return LogRate(x,y)
     elif np.all(x<=0):
