@@ -26,7 +26,7 @@ What ``sn_stat`` can do:
 
 * Define and manipulate the event rates vs. time :func:`sn_stat.rate`
 * Calculate the Log Likelihood Ratio :class:`sn_stat.LLR`
-* Calculate the significance of the supernova signal observation in the measured data :class:`sn_stat.ShapeAnalysis`
+* Calculate the significance of the supernova signal observation in the measured data :class:`sn_stat.ShapeAnalysis`,:class:`sn_stat.CountAnalysis`
 * * And the expected distribution of the significance for a given hypothesis (rate)
 * Generate the events timestamps based on the event rate :class:`sn_stat.Sampler`
 
