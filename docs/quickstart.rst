@@ -56,7 +56,7 @@ Significance on a given data set
     from sn_stat import ShapeAnalysis
 
     #analysis for a single experiment
-    ana = ShapeAnalysis([det]) #we pass one LLR calculator
+    ana = ShapeAnalysis(det) 
     
     t0s = np.linspace(0,10) #assumed SN start time
     #Calculate the significance
@@ -72,7 +72,7 @@ Significance quantiles and distribution
     S = rate(([0,1,10],[0,10,0]))
 
     det = DetConfig(S,B)
-    ana = ShapeAnalysis([det]) 
+    ana = ShapeAnalysis(det) 
     
     #Calculate the significance quantiles
     from sn_stat import z2p

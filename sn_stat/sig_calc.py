@@ -20,14 +20,27 @@ class Analysis(ABC):
         if discrete:
             self._pmf = self.d0.pmf
         else:
-            self._pmf = lambda x:0
+            self._pmf = self.d0.pdf#lambda x:0
 
     @abstractmethod
     def l_distr(self, hypos, add_bg=False):
+        """
+        Calculate test statistic distribution
+
+        Args:
+            hypos: :class:rate or "H0"
+                Hypothetical event we use to calculate the distribution
+                If "H0" then use the background rate (self.det.B)
+
+            add_bg: bool
+                If set, then add the background rate to the `hypos`
+        Returns:
+            frozen poisson distribution
+        """
         pass
 
     @abstractmethod
-    def l_val(self, data, d0):
+    def l_val(self, data, d0, **params):
         """
         Calculate test statistics value
 
@@ -37,17 +50,19 @@ class Analysis(ABC):
                 If there is only one detector, just an array(float) is enough
             t0 (ndarray of float):
                 assumed time/times of signal start
+            params:
+                additional optional parameters for the current method
         Returns:
             ndarray of float:
                 test statistic values for each value in `t0`
         """
         pass
 
-    def __call__(self, data, t0):
+    def __call__(self, data, t0, **params):
         """
         calculate significance for the set of measurements
         """
-        return self.l2z(self.l_val(data,t0))
+        return self.l2z(self.l_val(data,t0, **params))
  
     def l2p(self, l):
         "convert TestStatistics to p-value"
@@ -95,22 +110,10 @@ class CountingAnalysis(Analysis):
         """
  
         self.det = det
+        self.time_window = det.time_window
         super().__init__(discrete=True)
 
     def l_distr(self, hypos, add_bg=False):
-        """
-        Calculate TS distribution
-
-        Args:
-            hypos: :class:rate or "H0"
-                Hypothetical event we use to calculate the distribution
-                If "H0" then use the background rate (self.det.B)
-
-            add_bg: bool
-                If set, then add the background rate to the `hypos`
-        Returns:
-            frozen poisson distribution
-        """
         if(hypos=="H0"):
             hypos=self.det.B
         if(add_bg):
@@ -119,7 +122,7 @@ class CountingAnalysis(Analysis):
         N = hypos.integral(*self.det.time_window)
         return poisson(mu=N)
 
-    def l_val(self, data, t0):
+    def l_val(self, data, t0, **params):
         data = np.array(data, ndmin=2).T
         t0 = np.array(t0, ndmin=2)
         tw = self.det.time_window
@@ -146,34 +149,23 @@ class ShapeAnalysis(Analysis):
         """
         if isinstance(detectors, DetConfig):
             detectors = [detectors]
+        self.time_window = [
+                min([d.time_window[0] for d in detectors]),
+                max([d.time_window[1] for d in detectors])
+                ]
         self.llrs = [LLR(d) for d in detectors]
         self.params=params
         self.det = detectors
         super().__init__()
     
-    def l_val(self, data, t0):
+    def l_val(self, data, t0, **params):
         if(len(data)!=len(self.llrs)):
             data = np.array(data, ndmin=2)
             assert data.shape[0]==len(self.llrs)
-        ls = np.stack([l(d,t0) for l,d in zip(self.llrs, data)])
+        ls = np.stack([l(d,t0,**params) for l,d in zip(self.llrs, data)])
         return np.sum(ls,axis=0)
    
     def l_distr(self,hypos,add_bg=False):
-        """
-        Calculate TS distribution
-
-        Args:
-            hypos: array(:class:rate) or "H0"
-                Hypothetical event we use to calculate the distribution - for each detector
-                If "H0" then use the background rate (self.det.B)
-
-            add_bg: bool
-                If set, then add the background rate to the `hypos`
-        Returns:
-            :class:`sn_stat.llr.Distr`:
-                Distribution of the test statistics
-        """
-
         if hypos!="H0":
             if not isinstance(hypos, Iterable):
                 hypos=[hypos]
@@ -182,4 +174,3 @@ class ShapeAnalysis(Analysis):
                 hypos = [h+l.det.B for h,l in zip(hypos,self.llrs)]
         return JointDistr(self.llrs,hypos,**self.params)
     
-        
