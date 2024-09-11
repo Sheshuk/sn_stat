@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.integrate import cumulative_trapezoid as cumtrapz
+from scipy.integrate import cumulative_trapezoid
 from scipy.interpolate import interp1d
 
 class Sampler:
@@ -21,7 +21,7 @@ class Sampler:
         order = np.argsort(x)
         self.x=x[order]
         self.y=y[order]
-        ycum = cumtrapz(y=self.y,x=self.x, initial=0)
+        ycum = cumulative_trapezoid(y=self.y, x=self.x, initial=0)
         self.ycum=ycum
         Ytotal = ycum[-1]
         #print(Ytotal)
