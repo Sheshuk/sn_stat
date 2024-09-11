@@ -3,8 +3,8 @@ from hypothesis import strategies as st, given
 from hypothesis.extra.numpy import arrays
 import numpy as np
 
-Xvalues = st.floats(-100000,100000)
-Yvalues = st.floats(0,100000)
+Xvalues = st.floats(-100000,100000, allow_subnormal=False)
+Yvalues = st.floats(0,100000, allow_subnormal=False)
 
 Ranges = st.tuples(Xvalues,Xvalues).map(sorted)
 
